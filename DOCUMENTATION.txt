@@ -1,0 +1,189 @@
+# Epic Backend - Authentication Module Documentation
+
+## Overview
+This is a Node.js backend application that provides user authentication functionality, specifically handling user registration (signup) and login. It uses Express.js as the web framework, MongoDB as the database with Mongoose ODM, bcryptjs for password hashing, and JSON Web Tokens (JWT) for session management. The application is built with modularity in mind, separating concerns into controllers, models, routes, middleware, and configuration files.
+
+## Technologies Used
+- **Node.js**: Runtime environment
+- **Express.js**: Web framework for building APIs
+- **MongoDB**: NoSQL database
+- **Mongoose**: ODM for MongoDB
+- **bcryptjs**: Library for hashing passwords
+- **jsonwebtoken**: Library for generating and verifying JWTs
+- **cors**: Middleware for enabling CORS
+- **dotenv**: For loading environment variables
+- **nodemon**: Development tool for auto-restarting the server
+
+## Project Structure
+```
+src/
+├── config/
+│   └── database.js          # MongoDB connection configuration
+├── controllers/
+│   └── authController.js    # Authentication logic (signup, login)
+├── middleware/
+│   └── authMiddleware.js    # JWT authentication middleware (for future use)
+├── models/
+│   └── User.js              # User model with Mongoose schema
+├── routes/
+│   └── authRoutes.js        # Authentication routes
+└── index.js                 # Main application entry point
+```
+
+## How It Works
+
+### User Registration (Signup)
+1. The client sends a POST request to `/api/auth/signup` with `email`, `password`, and `username` in the request body.
+2. The server validates that all required fields are provided.
+3. It checks if a user with the same email or username already exists in the database.
+4. If the user doesn't exist, a new User document is created.
+5. The password is automatically hashed using bcryptjs before saving (handled in the User model's pre-save hook).
+6. A JWT token is generated containing the user's ID.
+7. The server responds with a success message, the JWT token, and user information (excluding the password).
+
+### User Login
+1. The client sends a POST request to `/api/auth/login` with `email` and `password`.
+2. The server validates that email and password are provided.
+3. It searches for a user with the provided email in the database.
+4. If the user exists, it compares the provided password with the stored hashed password using bcryptjs.
+5. If the passwords match, a JWT token is generated.
+6. The server responds with a success message, the JWT token, and user information.
+
+### JWT Authentication
+- JWTs are used for stateless authentication.
+- Tokens expire after 1 day by default.
+- The `authenticateToken` middleware (in `authMiddleware.js`) can be used to protect future routes by verifying the JWT in the Authorization header.
+
+### Database Connection
+- The application connects to MongoDB using Mongoose.
+- Connection details are configured via the `MONGODB_URI` environment variable.
+- Falls back to `mongodb://localhost:27017/epic-backend` if not provided.
+
+## API Endpoints
+
+### POST /api/auth/signup
+Register a new user.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "username": "unique_username"
+}
+```
+
+**Response (201 - Created):**
+```json
+{
+  "message": "User registered successfully",
+  "token": "jwt_token_here",
+  "user": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "username": "unique_username"
+  }
+}
+```
+
+**Error Responses:**
+- 400: Missing required fields or user already exists
+- 500: Server error
+
+### POST /api/auth/login
+Authenticate an existing user.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Response (200 - OK):**
+```json
+{
+  "message": "Login successful",
+  "token": "jwt_token_here",
+  "user": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "username": "unique_username"
+  }
+}
+```
+
+**Error Responses:**
+- 400: Missing required fields or invalid credentials
+- 500: Server error
+
+### GET /api/health
+Health check endpoint to verify server status.
+
+**Response (200 - OK):**
+```json
+{
+  "message": "Server is running",
+  "timestamp": "2026-02-04T12:00:00.000Z"
+}
+```
+
+## Environment Variables
+Create a `.env` file in the root directory with:
+```
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/epic-backend
+JWT_SECRET=your_super_secret_jwt_key_here_change_in_production
+```
+
+## Running the Application
+
+### Development
+```bash
+npm run dev
+```
+This starts the server with nodemon, which automatically restarts on file changes.
+
+### Production
+```bash
+npm start
+```
+This runs the server with Node.js directly.
+
+## Security Features
+- Passwords are hashed using bcryptjs with a salt rounds of 10
+- JWT tokens are signed with a secret key and have an expiration time
+- Input validation for required fields
+- CORS enabled for cross-origin requests
+- Error messages are sanitized to prevent information leakage
+
+## Modularity and Extensibility
+- **Separated Concerns:** Each component has a specific responsibility
+- **Middleware:** Authentication middleware is ready for protecting additional routes
+- **Models:** User model can be extended with additional fields
+- **Routes:** New authentication-related routes can be easily added
+- **Controllers:** Business logic is isolated and can be expanded
+- **Configuration:** Database and other configs are centralized
+
+## Future Enhancements
+- Add password reset functionality
+- Implement email verification
+- Add role-based access control (RBAC)
+- Create user profile management endpoints
+- Implement refresh token mechanism
+- Add rate limiting and security middleware
+- Add comprehensive input validation and sanitization
+- Implement logging and monitoring
+
+## Prerequisites
+- Node.js (version 14 or higher)
+- MongoDB (local installation or cloud service like MongoDB Atlas)
+- npm or yarn package manager
+
+## Installation
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables in `.env` file
+4. Ensure MongoDB is running
+5. Start the server: `npm run dev` for development or `npm start` for production
