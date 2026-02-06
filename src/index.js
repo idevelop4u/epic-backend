@@ -8,6 +8,7 @@ const path = require('path');
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -42,6 +43,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

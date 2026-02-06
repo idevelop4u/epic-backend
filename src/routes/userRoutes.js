@@ -25,9 +25,6 @@ router.get('/profile', getProfile);
 router.put('/profile', updateProfile);
 router.post('/profile/photo', profileUpload.single('photo'), uploadProfilePhoto);
 
-// Get another user's public profile
-router.get('/:userId', getPublicProfile);
-
 // Location
 router.put('/location', updateLocation);
 
@@ -46,5 +43,8 @@ router.put('/fcm-token', updateFCMToken);
 
 // Convert guest to full user
 router.post('/convert-guest', convertGuestToUser);
+
+// Get another user's public profile (Wildcard should be last)
+router.get('/:userId', getPublicProfile);
 
 module.exports = router;

@@ -173,9 +173,8 @@ taskSchema.index({ assignedHelper: 1, status: 1 });
 taskSchema.index({ urgency: 1, status: 1 });
 
 // Update timestamp on save
-taskSchema.pre('save', function (next) {
+taskSchema.pre('save', async function () {
   this.updatedAt = new Date();
-  next();
 });
 
 // Method to check if task can accept more helpers
