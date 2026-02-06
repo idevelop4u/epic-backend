@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const Review = require('../models/Review');
+const Achievement = require('../models/Achievement');
+const Task = require('../models/Task');
 
 // Get current user profile
 const getProfile = async (req, res) => {

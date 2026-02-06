@@ -18,10 +18,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: function() {
-      // Password not required for OAuth users or guests
-      return !this.isGuest && !this.googleId && !this.appleId;
-    },
+    // Not required for OAuth users or guests - validated in controller
   },
 
   // Profile Information
@@ -189,15 +186,14 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ 'location': '2dsphere' });
 
 // Hash password before saving
-userSchema.pre('save', function (next) {
+userSchema.pre('save', async function () {
   // Update the updatedAt timestamp
   this.updatedAt = new Date();
-  
-  if (!this.isModified('password') || !this.password) return next();
 
-  const salt = bcrypt.genSaltSync(10);
-  this.password = bcrypt.hashSync(this.password, salt);
-  next();
+  if (!this.isModified('password') || !this.password) return;
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Method to compare password
