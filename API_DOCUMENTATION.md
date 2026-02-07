@@ -961,6 +961,243 @@ Verify task completion with OTP (by helper).
 
 ---
 
+## Helper Matching System Endpoints
+
+> **Note:** All help request endpoints require `Authorization: Bearer <token>` header. Guest users cannot apply or manage applications.
+
+---
+
+### 33. Apply to Task
+**POST** `/help-requests/apply/:taskId`
+
+Apply to help with a task (as helper).
+
+**Headers:** `Authorization: Bearer <token>`
+
+**URL Params:** `taskId` - The task ID to apply to
+
+**Request Body:**
+```json
+{
+  "message": "I would like to help with this task. I have experience with groceries.",
+  "currentLatitude": 12.9750,
+  "currentLongitude": 77.5980
+}
+```
+
+**Success Response (201):**
+```json
+{
+  "message": "Application submitted successfully",
+  "helpRequest": {
+    "id": "65a1b2c3d4e5f6g7h8i9j0k1",
+    "taskId": "65a1b2c3d4e5f6g7h8i9j0k2",
+    "taskTitle": "Help with groceries",
+    "message": "I would like to help with this task...",
+    "distance": "2.5 km",
+    "estimatedArrival": "30 minutes",
+    "status": "pending"
+  }
+}
+```
+
+**Error Responses:**
+- `400`: Task is no longer accepting applications
+- `400`: Cannot apply to your own task
+- `400`: You have already applied to this task
+- `404`: Task not found
+
+---
+
+### 34. Get Task Applications
+**GET** `/help-requests/task/:taskId`
+
+Get all applications for a specific task (requester only).
+
+**Headers:** `Authorization: Bearer <token>`
+
+**URL Params:** `taskId` - The task ID
+
+**Success Response (200):**
+```json
+{
+  "applications": [
+    {
+      "_id": "65a1b2c3d4e5f6g7h8i9j0k1",
+      "helper": {
+        "username": "john_helper",
+        "profilePhoto": "/uploads/profiles/john.jpg",
+        "averageRating": 4.8,
+        "totalReviews": 25,
+        "idVerified": true,
+        "phoneVerified": true
+      },
+      "message": "I can help with this!",
+      "distance": 2.5,
+      "estimatedTimeMinutes": 30,
+      "status": "pending",
+      "createdAt": "2026-02-06T12:00:00.000Z"
+    }
+  ],
+  "total": 3
+}
+```
+
+---
+
+### 35. Get My Applications
+**GET** `/help-requests/my-applications`
+
+Get all applications submitted by current user (as helper).
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `status` | string | - | Filter by status (pending, approved, rejected, cancelled) |
+| `page` | number | 1 | Page number |
+| `limit` | number | 10 | Items per page |
+
+**Success Response (200):**
+```json
+{
+  "applications": [
+    {
+      "_id": "65a1b2c3d4e5f6g7h8i9j0k1",
+      "task": {
+        "title": "Help with groceries",
+        "category": "errands",
+        "urgency": "normal",
+        "location": { ... },
+        "status": "open",
+        "pointsReward": 10
+      },
+      "message": "I can help!",
+      "status": "pending",
+      "createdAt": "2026-02-06T12:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 5,
+    "pages": 1
+  }
+}
+```
+
+---
+
+### 36. Approve Application
+**POST** `/help-requests/:applicationId/approve`
+
+Approve a helper's application (requester only).
+
+**Headers:** `Authorization: Bearer <token>`
+
+**URL Params:** `applicationId` - The application ID
+
+**Success Response (200):**
+```json
+{
+  "message": "Application approved successfully",
+  "helpRequest": { ... },
+  "assignedHelper": {
+    "username": "john_helper",
+    "phone": "+919876543210"
+  }
+}
+```
+
+**Error Responses:**
+- `400`: Task already has maximum number of helpers
+- `400`: Application is not in pending status
+- `403`: Not authorized to approve this application
+- `404`: Application not found
+
+---
+
+### 37. Reject Application
+**POST** `/help-requests/:applicationId/reject`
+
+Reject a helper's application (requester only).
+
+**Headers:** `Authorization: Bearer <token>`
+
+**URL Params:** `applicationId` - The application ID
+
+**Request Body:**
+```json
+{
+  "reason": "Looking for someone with more experience"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Application rejected",
+  "helpRequest": { ... }
+}
+```
+
+---
+
+### 38. Cancel Application
+**POST** `/help-requests/:applicationId/cancel`
+
+Cancel own application (helper only).
+
+**Headers:** `Authorization: Bearer <token>`
+
+**URL Params:** `applicationId` - The application ID
+
+**Success Response (200):**
+```json
+{
+  "message": "Application cancelled successfully"
+}
+```
+
+**Error Responses:**
+- `400`: Can only cancel pending applications
+- `403`: Not authorized to cancel this application
+
+---
+
+### 39. Update Helper Location
+**PUT** `/help-requests/:applicationId/location`
+
+Update current location for ETA tracking (approved helpers only).
+
+**Headers:** `Authorization: Bearer <token>`
+
+**URL Params:** `applicationId` - The application ID
+
+**Request Body:**
+```json
+{
+  "latitude": 12.9730,
+  "longitude": 77.5950
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Location updated successfully",
+  "distance": "1.2 km",
+  "eta": "15 minutes"
+}
+```
+
+**Error Responses:**
+- `400`: Can only update location for approved applications
+- `403`: Not authorized to update this application
+
+---
+
 ## Health Check
 
 ### 21. Health Check
@@ -1030,3 +1267,377 @@ Common HTTP Status Codes:
 - `403` - Forbidden (insufficient permissions)
 - `404` - Not Found
 - `500` - Server Error
+
+---
+
+## Socket.IO Real-time Features
+
+The EPICS backend supports real-time communication via Socket.IO for live tracking, chat, and notifications.
+
+### Connection Setup
+
+**Server URL:** `ws://localhost:5000` (or your deployment URL)
+
+**Authentication:**
+Socket connections require JWT authentication. Include your token in one of two ways:
+
+1. **Via auth object:**
+```javascript
+const socket = io('http://localhost:5000', {
+  auth: {
+    token: 'your-jwt-token'
+  }
+});
+```
+
+2. **Via Authorization header:**
+```javascript
+const socket = io('http://localhost:5000', {
+  extraHeaders: {
+    'Authorization': 'Bearer your-jwt-token'
+  }
+});
+```
+
+### Connection Events
+
+#### Client → Server Events
+
+##### `join:task`
+Join a task room to receive real-time updates.
+
+**Emit:**
+```javascript
+socket.emit('join:task', {
+  taskId: '65a1b2c3d4e5f6g7h8i9j0k1'
+});
+```
+
+**Requirements:**
+- User must be the requester, assigned helper, or additional helper
+
+**Response:**
+```javascript
+socket.on('joined:task', (data) => {
+  console.log(data);
+  // { taskId: '...', message: 'Successfully joined task room' }
+});
+```
+
+---
+
+##### `leave:task`
+Leave a task room.
+
+**Emit:**
+```javascript
+socket.emit('leave:task', {
+  taskId: '65a1b2c3d4e5f6g7h8i9j0k1'
+});
+```
+
+**Response:**
+```javascript
+socket.on('left:task', (data) => {
+  console.log(data);
+  // { taskId: '...', message: 'Successfully left task room' }
+});
+```
+
+---
+
+##### `update:location`
+Update helper's location (for live tracking).
+
+**Emit:**
+```javascript
+socket.emit('update:location', {
+  taskId: '65a1b2c3d4e5f6g7h8i9j0k1',
+  location: {
+    latitude: 12.9716,
+    longitude: 77.5946
+  }
+});
+```
+
+**Requirements:**
+- User must be the assigned helper or additional helper
+
+**Broadcasts to task room:**
+```javascript
+socket.on('helper:location', (data) => {
+  console.log(data);
+  /* {
+    taskId: '...',
+    helperId: '...',
+    location: { latitude: 12.9716, longitude: 77.5946 },
+    timestamp: '2026-02-07T08:00:00.000Z'
+  } */
+});
+```
+
+---
+
+##### `send:message`
+Send a chat message in task room.
+
+**Emit:**
+```javascript
+socket.emit('send:message', {
+  taskId: '65a1b2c3d4e5f6g7h8i9j0k1',
+  content: 'Hello, I am on my way!',
+  messageType: 'text' // 'text', 'location', 'image'
+});
+```
+
+**Requirements:**
+- User must be requester or assigned helper
+
+**Broadcasts to task room:**
+```javascript
+socket.on('message:new', (data) => {
+  console.log(data);
+  /* {
+    _id: '...',
+    taskId: '...',
+    sender: {
+      _id: '...',
+      username: 'john_helper',
+      profilePhoto: '/uploads/...'
+    },
+    content: 'Hello, I am on my way!',
+    messageType: 'text',
+    createdAt: '2026-02-07T08:05:00.000Z',
+    read: false
+  } */
+});
+```
+
+---
+
+##### `messages:read`
+Mark all messages in a task as read.
+
+**Emit:**
+```javascript
+socket.emit('messages:read', {
+  taskId: '65a1b2c3d4e5f6g7h8i9j0k1'
+});
+```
+
+**Broadcasts to task room:**
+```javascript
+socket.on('messages:marked_read', (data) => {
+  console.log(data);
+  // { taskId: '...', userId: '...' }
+});
+```
+
+---
+
+#### Server → Client Events
+
+##### `notification:new`
+Receive real-time notifications.
+
+**Listen:**
+```javascript
+socket.on('notification:new', (notification) => {
+  console.log(notification);
+  /* {
+    _id: '...',
+    type: 'helper_approved',
+    title: 'You\'re Approved!',
+    body: 'You\'ve been approved to help with "Help with groceries"',
+    data: { taskId: '...' },
+    createdAt: '2026-02-07T08:10:00.000Z'
+  } */
+});
+```
+
+**Notification Types:**
+- `help_request` - New helper application
+- `helper_approved` - Helper was approved
+- `helper_nearby` - Helper is nearby
+- `task_update` - Task status changed
+- `chat_message` - New chat message
+- `certificate_unlocked` - Certificate unlocked
+- `urgent_nearby` - Urgent task nearby
+- `system` - System notification
+
+---
+
+##### `task:status`
+Receive task status updates.
+
+**Listen:**
+```javascript
+socket.on('task:status', (data) => {
+  console.log(data);
+  /* {
+    taskId: '...',
+    status: 'in_progress',
+    assignedHelper: { _id: '...', username: '...' },
+    timestamp: '2026-02-07T08:15:00.000Z'
+  } */
+});
+```
+
+---
+
+##### `error`
+Receive error messages from socket events.
+
+**Listen:**
+```javascript
+socket.on('error', (error) => {
+  console.error(error.message);
+});
+```
+
+---
+
+### Complete Socket.IO Example
+
+```javascript
+import io from 'socket.io-client';
+
+// Initialize connection
+const socket = io('http://localhost:5000', {
+  auth: {
+    token: localStorage.getItem('token')
+  }
+});
+
+// Connection events
+socket.on('connect', () => {
+  console.log('✅ Connected to server');
+  
+  // Join task room
+  socket.emit('join:task', { taskId: currentTaskId });
+});
+
+socket.on('disconnect', () => {
+  console.log('❌ Disconnected from server');
+});
+
+// Listen for task events
+socket.on('joined:task', (data) => {
+  console.log('Joined task:', data.taskId);
+});
+
+socket.on('helper:location', (data) => {
+  // Update helper marker on map
+  updateHelperLocation(data.location);
+});
+
+socket.on('message:new', (message) => {
+  // Add message to chat
+  addMessageToChat(message);
+});
+
+socket.on('notification:new', (notification) => {
+  // Show notification to user
+  showNotification(notification.title, notification.body);
+});
+
+socket.on('task:status', (data) => {
+  // Update task UI
+  updateTaskStatus(data.status);
+});
+
+// Send location updates (for helpers)
+setInterval(() => {
+  if (isHelper && taskActive) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      socket.emit('update:location', {
+        taskId: currentTaskId,
+        location: {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        }
+      });
+    });
+  }
+}, 10000); // Every 10 seconds
+
+// Send chat message
+function sendMessage(content) {
+  socket.emit('send:message', {
+    taskId: currentTaskId,
+    content: content,
+    messageType: 'text'
+  });
+}
+
+// Cleanup
+window.addEventListener('beforeunload', () => {
+  socket.emit('leave:task', { taskId: currentTaskId });
+  socket.disconnect();
+});
+```
+
+---
+
+## Auto-Reminders for Nearby Helpers
+
+The system automatically sends notifications to nearby helpers for urgent tasks.
+
+**Frequency:** Every 5 minutes
+
+**Criteria:**
+- Task urgency: `urgent` or `sos`
+- Task status: `open`
+- Helper role preference: `helper` or `both`
+- Helper location updated within last 30 minutes
+- Distance:
+  - `urgent` tasks: Within 5 km
+  - `sos` tasks: Within 10 km
+
+**Notification Example:**
+```json
+{
+  "type": "urgent_nearby",
+  "title": "⚠️ Urgent Task Nearby",
+  "body": "\"Help elderly with medication\" - 3km away",
+  "data": {
+    "taskId": "65a1b2c3d4e5f6g7h8i9j0k1",
+    "urgency": "urgent"
+  }
+}
+```
+
+---
+
+## Best Practices
+
+### For Helpers
+1. **Update location regularly:** Emit `update:location` every 10-30 seconds during active tasks
+2. **Join task rooms:** Join the task room immediately after being approved
+3. **Leave task rooms:** Leave the room when task is completed or cancelled
+
+### For Requesters
+1. **Stay in task room:** Remain in the task room to receive helper location updates
+2. **Monitor notifications:** Listen for `notification:new` events for application updates
+
+### General
+1. **Handle disconnections:** Implement reconnection logic
+2. **Validate data:** Always validate incoming socket data
+3. **Error handling:** Listen for `error` events and handle gracefully
+4. **Clean up:** Always leave rooms and disconnect when done
+
+---
+
+## Environment Variables
+
+Add these to your `.env` file:
+
+```env
+# Socket.IO
+FRONTEND_URL=http://localhost:3000
+
+# Reminder Service
+# (No configuration needed - runs automatically every 5 minutes)
+```
+
+

@@ -67,11 +67,10 @@ helpRequestSchema.index({ task: 1, status: 1 });
 helpRequestSchema.index({ helper: 1, status: 1 });
 
 // Update respondedAt when status changes
-helpRequestSchema.pre('save', function (next) {
+helpRequestSchema.pre('save', async function () {
   if (this.isModified('status') && this.status !== 'pending') {
     this.respondedAt = new Date();
   }
-  next();
 });
 
 const HelpRequest = mongoose.model('HelpRequest', helpRequestSchema);

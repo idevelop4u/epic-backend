@@ -1,4 +1,5 @@
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
@@ -9,6 +10,9 @@ const connectDB = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const helpRequestRoutes = require('./routes/helpRequestRoutes');
+const { initializeSocket } = require('./socket');
+const { initializeReminderJobs } = require('./services/reminderService');
 
 // Load environment variables
 dotenv.config();
@@ -17,7 +21,11 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Initialize Socket.io
+initializeSocket(server);
 
 // Security middleware
 app.use(helmet());
@@ -44,6 +52,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/help-requests', helpRequestRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -65,8 +74,12 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Socket.IO server initialized`);
+
+  // Initialize auto-reminder jobs
+  initializeReminderJobs();
 });
 
-module.exports = app;
+module.exports = { app, server };
