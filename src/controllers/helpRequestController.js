@@ -1,6 +1,8 @@
 const HelpRequest = require('../models/HelpRequest');
 const Task = require('../models/Task');
 const User = require('../models/User');
+const { notifyNewHelpRequest, notifyHelperApproved } = require('../services/notificationService');
+const { emitTaskStatusUpdate } = require('../socket');
 
 // Helper function to calculate distance (Haversine formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -83,7 +85,8 @@ const applyToTask = async (req, res) => {
     // Increment application count on task
     await Task.findByIdAndUpdate(taskId, { $inc: { applicationCount: 1 } });
 
-    // TODO: Send notification to task requester
+    // Send notification to task requester
+    await notifyNewHelpRequest(taskId, task.requester, req.user._id);
 
     res.status(201).json({
       message: 'Application submitted successfully',
@@ -223,7 +226,16 @@ const approveApplication = async (req, res) => {
       }
     );
 
-    // TODO: Send notification to approved helper
+    // Send notification to approved helper
+    await notifyHelperApproved(task._id, req.user._id, helpRequest.helper._id);
+
+    // Emit task status update via Socket.io
+    emitTaskStatusUpdate(task._id, task.status, {
+      assignedHelper: {
+        _id: helpRequest.helper._id,
+        username: helpRequest.helper.username,
+      },
+    });
 
     res.status(200).json({
       message: 'Application approved successfully',
@@ -362,7 +374,8 @@ const updateHelperLocation = async (req, res) => {
 
     await helpRequest.save();
 
-    // TODO: Send real-time location update via Socket.io
+    // Note: Real-time location updates are now handled directly through Socket.io events
+    // The helper should use the 'update:location' socket event for live location tracking
 
     res.status(200).json({
       message: 'Location updated successfully',
