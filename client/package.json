@@ -1,0 +1,44 @@
+{
+  "name": "epic-community-helper",
+  "version": "1.0.0",
+  "description": "A community helper application connecting volunteers with elderly people needing assistance",
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@react-navigation/bottom-tabs": "^6.5.0",
+    "@react-navigation/native": "^6.1.0",
+    "@react-navigation/stack": "^6.3.0",
+    "axios": "^1.6.0",
+    "expo": "^49.0.0",
+    "expo-constants": "^14.0.0",
+    "expo-location": "^16.0.0",
+    "expo-notifications": "~0.20.1",
+    "expo-secure-store": "^12.0.0",
+    "expo-status-bar": "^1.11.0",
+    "formik": "^2.4.0",
+    "glob": "8.1.0",
+    "react": "18.2.0",
+    "react-native": "0.72.0",
+    "react-native-gesture-handler": "^2.13.0",
+    "react-native-reanimated": "^3.3.0",
+    "react-native-safe-area-context": "^4.6.0",
+    "react-native-screens": "^3.26.0",
+    "react-native-vector-icons": "^10.0.0",
+    "socket.io-client": "^4.5.4",
+    "yup": "^1.3.0",
+    "zustand": "^4.4.0",
+    "react-native-web": "~0.19.6",
+    "react-dom": "18.2.0",
+    "@expo/webpack-config": "^19.0.0",
+    "expo-device": "~5.4.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "babel-preset-expo": "^9.5.0"
+  }
+}
